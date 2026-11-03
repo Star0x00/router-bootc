@@ -1,0 +1,25 @@
+[Unit]
+Description=Caddy reverse proxy for the LAN (router.lan)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/caddy:2
+ContainerName=caddy
+# Host networking: Caddy terminates TLS on the real 10.10.10.1 addresses and
+# reaches every backend over loopback (they all publish to 127.0.0.1 only).
+# Binding 0.0.0.0 is fine, the input chain in nftables.conf drops the WAN NIC.
+# No PublishPort here: it is invalid in combination with Network=host.
+Network=host
+Volume=/etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+# Caddy's data dir holds the internal CA's root key and issued certificates.
+# Losing it means every client has to trust a new root again.
+Volume=/var/lib/caddy:/data
+Environment=TZ=Asia/Shanghai
+Exec=run --config /etc/caddy/Caddyfile --adapter caddyfile
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

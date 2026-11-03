@@ -1,0 +1,38 @@
+# Standalone image for the DeepSeek Harness (dsh) web profile.
+#
+# Deliberately NOT part of router-bootc: dsh is a Node application with a few
+# hundred npm dependencies, none of which belong in a router image that also
+# carries eBPF networking code. The quadlet pulls this image at boot instead
+# (see rootfs/usr/share/containers/systemd/dsh-web.container).
+#
+# node:26.13.0-slim is pinned to the same Node major the CLI is developed
+# against; dsh's entry point relies on `import.meta.main`, which needs Node 24+.
+FROM docker.io/library/node:26.13.0-slim
+
+# dsh drives shells, git and file search inside the container, so the tools its
+# bundled plugins call have to exist here, not on the router.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        git \
+        ripgrep \
+        openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+ARG DSH_VERSION=0.2.1-rc.5
+RUN npm i -g "@deepseek-ai/dsh@${DSH_VERSION}" \
+    && npm cache clean --force
+
+# dsh keeps all user state (profiles, sessions, plugin installs) under
+# $DSH_HOME. /data is the volume the quadlet mounts; HOME points there too
+# because the plugin manager writes outside $DSH_HOME as well.
+ENV DSH_HOME=/data \
+    HOME=/data \
+    DSH_TELEMETRY_DISABLED=1
+
+# dsh treats the invoking directory as the workspace root.
+WORKDIR /workspace
+EXPOSE 8090
+
+# The quadlet appends the profile and its flags: `web --host 0.0.0.0 ...`.
+ENTRYPOINT ["dsh"]

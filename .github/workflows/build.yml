@@ -14,6 +14,9 @@ env:
   # OCI references must be lowercase and github.repository_owner keeps the
   # owner's casing (Star0x00), so it cannot be interpolated here.
   IMAGE: ghcr.io/star0x00/router-bootc
+  # Standalone DeepSeek Harness image, built from Containerfile.dsh and pulled
+  # at boot by the dsh-web quadlet.
+  IMAGE_DSH: ghcr.io/star0x00/dsh
 
 concurrency:
   group: build-${{ github.ref }}
@@ -34,18 +37,17 @@ jobs:
           podman --version
           echo "IMAGE=$IMAGE INSTALLER_IMAGE=$INSTALLER_IMAGE"
 
+      # `just` is in noble universe and carries the whole build command line, so
+      # the workflow only decides when/where to run it and where to push.
+      - name: Install just
+        run: sudo apt-get update && sudo apt-get install -y just && just --version
+
       - name: Log in to GHCR
         if: github.event_name != 'pull_request'
         run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Build image
-        run: |
-          podman build \
-            --pull=always \
-            --platform linux/amd64 \
-            -t "$IMAGE:sha-${GITHUB_SHA::12}" \
-            -t "$IMAGE:latest" \
-            .
+        run: just build latest "sha-${GITHUB_SHA::12}"
 
       - name: Lint image
         run: podman run --rm "$IMAGE:latest" bootc container lint
@@ -66,5 +68,58 @@ jobs:
             echo "| Image | \`$IMAGE:sha-${GITHUB_SHA::12}\` |"
             echo "| Base | \`quay.io/fedora/fedora-bootc:44\` |"
             echo "| Size | $(podman image inspect --format '{{.Size}}' "$IMAGE:latest" | numfmt --to=iec) |"
+            echo "| Pushed | ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  dsh:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install just
+        run: sudo apt-get update && sudo apt-get install -y just && just --version
+
+      # The quadlet pins the minor tag (ghcr.io/star0x00/dsh:0.2.1) so that a new
+      # RC does not require editing the image reference in rootfs/. The version
+      # itself is declared once, in Containerfile.dsh, and read back from the
+      # justfile so the push step cannot drift from the built tags.
+      - name: Resolve version and tags
+        id: ver
+        run: |
+          echo "version=$(just dsh-version)" >> "$GITHUB_OUTPUT"
+          echo "minor=$(just dsh-minor)" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build image
+        run: just dsh "sha-${GITHUB_SHA::12}"
+
+      - name: Smoke test image
+        run: podman run --rm "$IMAGE_DSH:${{ steps.ver.outputs.minor }}" --version
+
+      - name: Push image
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          podman push "$IMAGE_DSH:sha-${GITHUB_SHA::12}"
+          podman push "$IMAGE_DSH:${{ steps.ver.outputs.version }}"
+          podman push "$IMAGE_DSH:${{ steps.ver.outputs.minor }}"
+
+      - name: Write summary
+        run: |
+          {
+            echo '### dsh'
+            echo
+            echo '| Item | Value |'
+            echo '|---|---|'
+            echo "| Image | \`$IMAGE_DSH:${{ steps.ver.outputs.minor }}\` |"
+            echo "| dsh | \`${{ steps.ver.outputs.version }}\` |"
+            echo "| Base | \`docker.io/library/node:26.13.0-slim\` |"
+            echo "| Size | $(podman image inspect --format '{{.Size}}' "$IMAGE_DSH:${{ steps.ver.outputs.minor }}" | numfmt --to=iec) |"
             echo "| Pushed | ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }} |"
           } >> "$GITHUB_STEP_SUMMARY"

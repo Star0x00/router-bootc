@@ -16,6 +16,7 @@ RUN dnf -y install --setopt=install_weak_deps=False \
         jq curl wget iproute iputils tcpdump bind-utils \
         tar rsync vim-enhanced less \
         podman glibc-langpack-en sudo \
+        dnsmasq \
         uv \
     && dnf clean all \
     && rm -rf /var/cache/dnf /var/cache/libdnf5
@@ -65,6 +66,7 @@ RUN systemctl mask \
         nftables.service \
         sing-box.service \
         dae.service \
+        local-dns.service \
         llama-model-fetch.service
 # Quadlet units under /usr/share/containers/systemd are generated at boot;
 # their [Install] section makes them start without an explicit enable.

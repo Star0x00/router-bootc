@@ -11,11 +11,13 @@ This repository has a container that can become my homelab server in charge of n
 | LAN        | `enp0s20f0u1` (USB RTL8153), `10.10.10.1/24`                 |
 | Root SSH   | see rootfs/etc/ssh/authorized_keys/root(./rootfs/etc/ssh/authorized_keys/root) |
 | Base image | `quay.io/fedora/fedora-bootc:44`                             |
-| Service    | `sub-store` `singbox` `dae`                                  |
+| Service    | `sub-store` `singbox` `dae` `caddy` `dsh`                  |
+| LAN names  | `*.router.lan` → `10.10.10.1` (dnsmasq zone fed to dae)      |
 
 ## Layout
 
 ```text
+├── Containerfile.dsh                                        # standalone image for the dsh quadlet
 ├── .github
 │   └── workflows
 │       └── build.yml                                       # CI: build + lint + push to GHCR
@@ -24,6 +26,8 @@ This repository has a container that can become my homelab server in charge of n
 │   │   ├── containers
 │   │   │   └── registries.conf.d                           # container registries
 │   │   │       └── 10-forgejo-insecure-registry.conf       # allow the LAN Forgejo registry over HTTP
+│   │   ├── caddy                                           # LAN reverse proxy
+│   │   │   └── Caddyfile                                   # serve *.router.lan over HTTPS (internal CA)
 │   │   ├── dae                                             # dae config
 │   │   │   ├── config.d
 │   │   │   │   ├── 10-global.dae
@@ -61,6 +65,7 @@ This repository has a container that can become my homelab server in charge of n
 │       │   │       ├── sshd.service.d
 │       │   │       │   └── 10-wait-lan-device.conf         # wait for the LAN NIC before binding
 │       │   │       ├── llama-model-fetch.service           # pull Hy-MT2 GGUF
+│       │   │       ├── local-dns.service                   # router.lan zone for dae
 │       │   │       └── sing-box.service                    # sing-box service
 │       │   ├── sysusers.d                                  # create user
 │       │   │   └── sing-box.conf                           # sing-box user and group
@@ -72,11 +77,15 @@ This repository has a container that can become my homelab server in charge of n
 │       └── share
 │           ├── containers                                  # containers
 │           │   └── systemd                                 # podman quadlets
+│           │       ├── caddy.container                     # reverse proxy
+│           │       ├── dsh-web.container                   # DeepSeek Harness web UI
 │           │       ├── llama-server.container              # llama translate service
 │           │       └── sub-store.container                 # sub-store
 │           └── network-services                            # static assets/scripts used by the network services
 │               ├── dae
 │               │   └── seed-assets.sh                      # cp dae geoip/geosite to /var
+│               ├── dnsmasq
+│               │   └── router-lan.conf                     # local zone: *.router.lan -> 10.10.10.1
 │               ├── llama
 │               │   └── fetch-model.sh                      # download models
 │               ├── nftables
@@ -88,7 +97,25 @@ This repository has a container that can become my homelab server in charge of n
 
 ## Service
 
-| Service      | Informations              |
-| ------------ | ------------------------- |
-| sub-store    | `10.10.10.1:3001/qwerhyy` |
-| llama-server | `10.10.10.1:8080`         |
+| Service      | Informations                                |
+| ------------ | ------------------------------------------- |
+| caddy        | `https://*.router.lan` (80/443)             |
+| sub-store    | `https://sub.router.lan/`                   |
+| llama-server | `https://llm.router.lan`                    |
+| dsh          | `https://dsh.router.lan`                    |
+
+TLS uses Caddy's internal CA (`local_certs`): `.lan` is not a public suffix, so
+no public CA can issue for it. Clients must trust the root certificate once:
+
+```sh
+find /var/lib/caddy -name root.crt   # .../caddy/pki/authorities/local/root.crt
+```
+
+dsh mints a new launch token per process and refuses `--host 0.0.0.0`, so it
+shares the host network and listens on loopback. The first visit needs that
+token; afterwards a 30-day cookie (secret kept in `/var/lib/dsh`) keeps you in:
+
+```sh
+TOKEN=$(journalctl -u dsh-web | grep -o 'token=[A-Za-z0-9_-]*' | tail -1 | cut -d= -f2)
+echo "https://dsh.router.lan/?token=$TOKEN"
+```

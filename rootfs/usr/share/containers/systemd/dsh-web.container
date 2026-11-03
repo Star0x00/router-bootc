@@ -1,0 +1,45 @@
+[Unit]
+Description=DeepSeek Harness (dsh) web UI
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=ghcr.io/star0x00/dsh:0.2.1
+ContainerName=dsh-web
+# Host networking is forced by dsh itself: the web app hard-rejects
+# `--host 0.0.0.0` ("would expose remote code execution to the network", see
+# dsh-web-app/lib/startup.js) and only listens on loopback. Publishing a port
+# cannot reach a loopback listener inside the container netns, so the container
+# shares the host netns and binds 127.0.0.1:8090 there — which is exactly what
+# Caddy (also host network) proxies to over https://dsh.router.lan.
+Network=host
+# Everything dsh persists (profiles, sessions, plugin installs) plus the
+# workspace its tools operate on. Only /var survives bootc upgrades.
+Volume=/var/lib/dsh:/data:Z
+Volume=/var/lib/dsh/workspace:/workspace:Z
+# Holds DEEPSEEK_API_KEY / DEEPSEEK_BASE_URL. Machine-local by design: the
+# tmpfiles entry creates it empty and 0600, fill it in on the running system.
+# It cannot carry the `-` (optional) prefix quadlet would pass through as a
+# relative path, so the file must always exist.
+EnvironmentFile=/var/lib/dsh/env
+Environment=DSH_HOME=/data
+Environment=HOME=/data
+Environment=DSH_TELEMETRY_DISABLED=1
+Environment=TZ=Asia/Shanghai
+# `--no-open` is mandatory: without it dsh tries to launch a browser and the
+# boot fails inside the container. The listen address stays at dsh's own
+# default (127.0.0.1) on purpose.
+#
+# `--trusted-host` feeds the /api browser-trust fence. Caddy forwards the
+# original Host header unchanged, so the authority the browser uses is what
+# dsh has to accept here. `--public-url` only changes the advertised/printed
+# URL and DSH_WEB_URL (it grants no trust), so the token link in the journal
+# is already the https:// one a browser on the LAN should open.
+Exec=web --port 8090 --no-open --trusted-host dsh.router.lan --public-url https://dsh.router.lan
+
+[Service]
+Restart=always
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

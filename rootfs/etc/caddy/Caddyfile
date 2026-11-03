@@ -1,0 +1,29 @@
+# LAN reverse proxy for *.router.lan.
+#
+# router.lan is resolved by dnsmasq (local-dns.service) and dae routes that
+# suffix there, so every name below points at 10.10.10.1 from any LAN client.
+#
+# HTTPS via Caddy's internal CA: ".lan" is not a public suffix, so no public CA
+# can issue for it, and ACME against a private address would fail anyway.
+# Clients must trust the root once; it lives in the caddy data volume:
+#   /var/lib/caddy/caddy/pki/authorities/local/root.crt
+# Internally issued leaf certificates are valid for 12h by default and are
+# renewed in the background — do not shorten that without a reason.
+{
+	admin off
+	local_certs
+	# No system trust store to write to inside the container.
+	skip_install_trust
+}
+
+sub.router.lan {
+	reverse_proxy 127.0.0.1:3001
+}
+
+llm.router.lan {
+	reverse_proxy 127.0.0.1:8080
+}
+
+dsh.router.lan {
+	reverse_proxy 127.0.0.1:8090
+}

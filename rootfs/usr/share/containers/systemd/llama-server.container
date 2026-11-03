@@ -9,8 +9,9 @@ Requires=llama-model-fetch.service
 [Container]
 Image=ghcr.io/ggml-org/llama.cpp:server
 ContainerName=llama-server
-# LAN only: nftables drops everything arriving on the WAN interface anyway.
-PublishPort=10.10.10.1:8080:8080
+# Reached through Caddy as llm.router.lan, so the port is published to loopback
+# only. nftables already drops the WAN NIC; this keeps the port off the LAN too.
+PublishPort=127.0.0.1:8080:8080
 Volume=/var/lib/llama.cpp:/models:Z
 # Hy-MT2 recommendation for the 1.8B model: temp 0.7 / top_p 0.6 / top_k 20 /
 # repetition_penalty 1.05. --jinja uses the chat template embedded in the GGUF.

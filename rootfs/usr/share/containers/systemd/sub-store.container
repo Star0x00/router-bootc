@@ -6,13 +6,15 @@ Wants=network-online.target
 [Container]
 Image=docker.io/xream/sub-store:http-meta
 ContainerName=sub-store
-PublishPort=3001:3001
+PublishPort=127.0.0.1:3001:3001
 Volume=/var/lib/sub-store:/opt/app/data:Z
 Environment=SUB_STORE_FRONTEND_BACKEND_PATH=/qwerhyy123
-# The built-in frontend runs on the LAN address, so its own origin has to be
-# allowed; without this every browser POST is rejected with
-# "403 Forbidden: CORS origin not allowed" (defaults only allow the hosted UI).
-Environment=SUB_STORE_CORS_ALLOWED_ORIGINS=http://10.10.10.1:3001
+# The built-in frontend is served at https://sub.router.lan through Caddy, so
+# that origin has to be allowed; without this every browser POST is rejected
+# with "403 Forbidden: CORS origin not allowed" (defaults only allow the
+# hosted UI). Caddy forwards the original Host header, so the origin is the
+# public name, not the loopback address.
+Environment=SUB_STORE_CORS_ALLOWED_ORIGINS=https://sub.router.lan
 Environment="SUB_STORE_BACKEND_SYNC_CRON=55 23 * * *"
 Environment="SUB_STORE_BACKEND_UPLOAD_CRON=0 4 * * *"
 Environment=TZ=Asia/Shanghai
