@@ -16,7 +16,7 @@ Volume=/etc/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
 # Losing it means every client has to trust a new root again.
 Volume=/var/lib/caddy:/data
 Environment=TZ=Asia/Shanghai
-Exec=run --config /etc/caddy/Caddyfile --adapter caddyfile
+Exec=caddy run --config /etc/caddy/Caddyfile --adapter caddyfile
 
 [Service]
 Restart=always

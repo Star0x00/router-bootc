@@ -20,4 +20,5 @@ DefaultLeaseTimeSec=4000
 MaxLeaseTimeSec=4000
 
 [Link]
-RequiredForOnline=yes
+# LAN suspend
+RequiredForOnline=no
