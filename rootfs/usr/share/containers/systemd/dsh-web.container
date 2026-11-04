@@ -4,6 +4,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Container]
+# Pull by digest, not just by tag: `just dsh` rebuilds in place under the same
+# 0.2.1 tag, so a plain restart would otherwise keep running the old image.
+Pull=newer
 Image=ghcr.io/star0x00/dsh:0.2.1
 ContainerName=dsh-web
 # Host networking is forced by dsh itself: the web app hard-rejects
