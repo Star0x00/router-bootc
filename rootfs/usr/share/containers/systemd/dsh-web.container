@@ -14,9 +14,11 @@ ContainerName=dsh-web
 # Caddy (also host network) proxies to over https://dsh.router.lan.
 Network=host
 # Everything dsh persists (profiles, sessions, plugin installs) plus the
-# workspace its tools operate on. Only /var survives bootc upgrades.
+# workspace its tools operate on. Only /var survives bootc upgrades. The
+# workspace is a sibling of $DSH_HOME, not a child: agent file operations are
+# confined to it and can never touch dsh's own state.
 Volume=/var/lib/dsh:/data:Z
-Volume=/var/lib/dsh/workspace:/workspace:Z
+Volume=/var/lib/dsh-workspace:/workspace:Z
 # Holds DEEPSEEK_API_KEY / DEEPSEEK_BASE_URL. Machine-local by design: the
 # tmpfiles entry creates it empty and 0600, fill it in on the running system.
 # It cannot carry the `-` (optional) prefix quadlet would pass through as a
