@@ -21,6 +21,7 @@ RUN apt-get update \
 
 ARG DSH_VERSION=0.2.1-rc.5
 RUN npm i -g "@deepseek-ai/dsh@${DSH_VERSION}" \
+    npm i -g pnpm \
     && npm cache clean --force
 
 # dsh keeps all user state (profiles, sessions, plugin installs) under
