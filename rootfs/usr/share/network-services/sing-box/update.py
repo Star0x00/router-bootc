@@ -32,8 +32,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 
-SUB_URL = "http://10.10.10.1:3001/qwerhyy123/download/collection/singbox?target=sing-box"
-HEALTH_URL = "http://10.10.10.1:3001/qwerhyy123/api/utils/env"
+SUB_URL = "http://127.0.0.1:3001/qwerhyy123/download/collection/singbox?target=sing-box"
+HEALTH_URL = "http://127.0.0.1:3001/qwerhyy123/api/utils/env"
 CONFIG_FILE = Path("/etc/sing-box/config.json")
 TEMPLATE = Path(__file__).resolve().parent / "base.json"
 SING_BOX, SYSTEMCTL, GROUP = "/usr/bin/sing-box", "/usr/bin/systemctl", "sing-box"
