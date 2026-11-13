@@ -22,7 +22,8 @@ routing {
     domain(suffix: mmstat.com) -> direct
     domain(suffix: qianwenai.com) -> direct
     domain(suffix: hypergryph.com) -> direct
-    domain(geosite:cn) -> direct
+    domain(geosite:cn) -> must_direct
+    domain(geosite:kurogames) -> must_direct
     domain(geosite:bilibili) -> must_direct
     domain(geosite:bilibili2) -> must_direct
     domain(geosite:bilibili-cdn) -> must_direct
