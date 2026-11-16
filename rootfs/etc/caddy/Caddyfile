@@ -34,3 +34,7 @@ dsh.router.lan {
 singbox.router.lan {
 	reverse_proxy 127.0.0.1:9090
 }
+
+git.router.lan {
+	reverse_proxy 127.0.0.1:3000
+}

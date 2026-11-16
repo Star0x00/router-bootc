@@ -3,7 +3,7 @@
 # Scope so far: installable, bootable, DHCP, SSH, forwarding,
 # plus dae (eBPF transparent proxy) with sing-box as its SOCKS5 outbound,
 # Sub-Store (quadlet container) and the LAN DHCP server (systemd-networkd).
-# forgejo / remaining containers come later.
+# Forgejo (quadlet container). Remaining containers come later.
 #
 # Rule: static config goes in /usr; only machine-local state belongs in /etc.
 FROM quay.io/fedora/fedora-bootc:44

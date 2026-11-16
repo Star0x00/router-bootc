@@ -79,6 +79,7 @@ This repository has a container that can become my homelab server in charge of n
 │           │   └── systemd                                 # podman quadlets
 │           │       ├── caddy.container                     # reverse proxy
 │           │       ├── dsh-web.container                   # DeepSeek Harness web UI
+│           │       ├── forgejo.container                   # self-hosted git + push mirrors
 │           │       ├── llama-server.container              # llama translate service
 │           │       └── sub-store.container                 # sub-store
 │           └── network-services                            # static assets/scripts used by the network services
@@ -103,6 +104,7 @@ This repository has a container that can become my homelab server in charge of n
 | sub-store    | `https://sub.router.lan/`                   |
 | llama-server | `https://llm.router.lan`                    |
 | dsh          | `https://dsh.router.lan`                    |
+| forgejo      | `https://git.router.lan` (web UI, git, OCI registry) |
 
 TLS uses Caddy's internal CA (`local_certs`): `.lan` is not a public suffix, so
 no public CA can issue for it. Clients must trust the root certificate once:
@@ -119,3 +121,30 @@ token; afterwards a 30-day cookie (secret kept in `/var/lib/dsh`) keeps you in:
 TOKEN=$(journalctl -u dsh-web | grep -o 'token=[A-Za-z0-9_-]*' | tail -1 | cut -d= -f2)
 echo "https://dsh.router.lan/?token=$TOKEN"
 ```
+
+Forgejo is not locked: on the first visit the installer at
+`https://git.router.lan/install` asks for the database (sqlite3), the app URL
+and the admin account, then writes `INSTALL_LOCK = true` into
+`/var/lib/forgejo/gitea/conf/app.ini`, so the page closes itself afterwards and
+won't come back across upgrades. The `FORGEJO__*` variables in the quadlet keep
+overriding that file on every start.
+
+Git over SSH runs on the built-in server, port 2222 (`START_SSH_SERVER`,
+`SSH_LISTEN_PORT`), independently of the host sshd on 22. Add the public key in
+the web UI under *Settings > SSH / GPG Keys* and clone with the URL the UI
+prints:
+
+```sh
+ssh://git@git.router.lan:2222/<you>/<repo>.git
+```
+
+With `Port 2222` under a `Host git.router.lan` entry in `~/.ssh/config` the
+scp-style `git@git.router.lan:<you>/<repo>.git` works too.
+
+Push mirrors are configured in the web UI (`Settings > Repository > Mirror
+Settings`), one entry per target — GitHub and Codeberg both get their own token
+(GitHub fine-grained PAT with Contents read/write, plus Workflows if the repo
+carries `.github/workflows`; Codeberg token as the password). Check *Sync when
+new commits are pushed* so a single `git push` to the router fans out. Push
+mirrors force-push: the remote repos must already exist and share history, and
+anything committed only there is overwritten. All state is in `/var/lib/forgejo`.
