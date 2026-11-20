@@ -5,7 +5,6 @@ global {
     disable_waiting_network: true
 
     wan_interface: eno1
-    lan_interface: enp0s20f0u1
 
     dial_mode: domain+
     allow_insecure: false

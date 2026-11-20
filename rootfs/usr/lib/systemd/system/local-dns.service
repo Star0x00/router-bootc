@@ -1,11 +1,8 @@
 [Unit]
-Description=Local DNS zone for router.lan (dae upstream)
-# Must be up before dae answers LAN queries, otherwise router.lan names briefly
-# fail to resolve during boot. dae does not depend on it, so a broken zone
-# cannot keep the proxy from starting.
-Wants=network-pre.target
-After=network-pre.target
-Before=dae.service
+Description=LAN DNS resolver (public upstreams, authoritative for router.lan)
+# Owns 10.10.10.1:53 itself; waits for the address. dae is not involved.
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple

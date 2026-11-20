@@ -1,10 +1,5 @@
-# Node: the only proxy outbound, the local SOCKS5 that sing-box listens on at
-# 127.0.0.1:2080.
-#
-# dae only does eBPF interception plus the direct/proxy decision. The node pool,
-# latency tests and failover all live in sing-box, which refreshes them from
-# Sub-Store on every start (see sing-box.service ExecStartPre). The old A/B pair
-# (socks5 2080 for the host, 2081 for the LAN) is merged into this one.
+# Local SOCKS5 for the router's own traffic (no auth, loopback only).
+# LAN devices use 10.10.10.1:2081.
 node {
     'socks5://127.0.0.1:2080'
 }

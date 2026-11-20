@@ -9,6 +9,8 @@ routing {
     pname(containerd, dockerd) -> must_direct
 
     # ── DNS ──
+    # dnsmasq serves the LAN; its upstream queries must not re-enter dae's DNS.
+    pname(dnsmasq) -> must_direct
     l4proto(udp, tcp) && dport(53) -> direct
 
     # ── Container networks stay direct (container-to-container and

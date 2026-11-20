@@ -12,7 +12,7 @@ This repository has a container that can become my homelab server in charge of n
 | Root SSH   | see rootfs/etc/ssh/authorized_keys/root(./rootfs/etc/ssh/authorized_keys/root) |
 | Base image | `quay.io/fedora/fedora-bootc:44`                             |
 | Service    | `sub-store` `singbox` `dae` `caddy` `dsh`                  |
-| LAN names  | `*.router.lan` → `10.10.10.1` (dnsmasq zone fed to dae)      |
+| LAN names  | `*.router.lan` → `10.10.10.1` (dnsmasq)                    |
 
 ## Layout
 
@@ -65,7 +65,7 @@ This repository has a container that can become my homelab server in charge of n
 │       │   │       ├── sshd.service.d
 │       │   │       │   └── 10-wait-lan-device.conf         # wait for the LAN NIC before binding
 │       │   │       ├── llama-model-fetch.service           # pull Hy-MT2 GGUF
-│       │   │       ├── local-dns.service                   # router.lan zone for dae
+│       │   │       ├── local-dns.service                   # LAN DNS: 10.10.10.1:53 + router.lan
 │       │   │       └── sing-box.service                    # sing-box service
 │       │   ├── sysusers.d                                  # create user
 │       │   │   └── sing-box.conf                           # sing-box user and group
@@ -86,7 +86,7 @@ This repository has a container that can become my homelab server in charge of n
 │               ├── dae
 │               │   └── seed-assets.sh                      # cp dae geoip/geosite to /var
 │               ├── dnsmasq
-│               │   └── router-lan.conf                     # local zone: *.router.lan -> 10.10.10.1
+│               │   └── router-lan.conf                     # LAN DNS on 10.10.10.1:53, router.lan zone
 │               ├── llama
 │               │   └── fetch-model.sh                      # download models
 │               ├── nftables
