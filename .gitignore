@@ -1,6 +1,8 @@
 result
 result-*
 .direnv/
+__pycache__/
+*.pyc
 cache/
 *.qcow2
 *.iso
