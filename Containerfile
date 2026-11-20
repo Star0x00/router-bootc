@@ -64,10 +64,7 @@ RUN systemctl mask \
         systemd-networkd-wait-online.service \
         sshd.service \
         nftables.service \
-        sing-box.service \
-        dae.service \
-        local-dns.service \
-        llama-model-fetch.service
+        local-dns.service
 # Quadlet units under /usr/share/containers/systemd are generated at boot;
 # their [Install] section makes them start without an explicit enable.
 

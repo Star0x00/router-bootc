@@ -106,6 +106,10 @@ This repository has a container that can become my homelab server in charge of n
 | dsh          | `https://dsh.router.lan`                    |
 | forgejo      | `https://git.router.lan` (web UI, git, OCI registry) |
 
+`dae` and `sing-box` are installed but **not** enabled: start them together with
+`systemctl start dae` (dae pulls sing-box in). LAN devices are no longer proxied;
+they only keep using the router as gateway and DNS server.
+
 TLS uses Caddy's internal CA (`local_certs`): `.lan` is not a public suffix, so
 no public CA can issue for it. Clients must trust the root certificate once:
 
